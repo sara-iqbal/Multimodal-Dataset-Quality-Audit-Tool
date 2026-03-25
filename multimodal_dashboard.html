@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Multimodal Dataset Quality Audit — Sara Iqbal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--cream:#faf9f7;--white:#fff;--warm1:#f5f3ef;--border:#e2ddd6;--ink:#1c1a17;--navy:#12234a;--gold:#9a6b00;--gold2:#c4a030;--teal:#0c5f5a;--green:#145232;--red:#8b2020;--amber:#7a4a0a;--muted:#6b6459;--light:#a09890;--display:'Cormorant Garamond',serif;--body:'Outfit',sans-serif;--mono:'JetBrains Mono',monospace;--sh:0 1px 3px rgba(28,26,23,.06),0 4px 16px rgba(28,26,23,.04);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--cream);color:var(--ink);font-family:var(--body);font-size:14px;}
+header{background:var(--navy);position:relative;overflow:hidden;}
+header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--gold2),var(--gold));}
+.hgrid{position:absolute;inset:0;opacity:.03;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,#fff 39px,#fff 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,#fff 39px,#fff 40px);}
+.hinner{max-width:1340px;margin:0 auto;padding:36px 44px 32px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center;position:relative;z-index:1;}
+.eyebrow{font-family:var(--mono);font-size:9px;color:rgba(255,255,255,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:12px;}
+.eyebrow::before{content:'';width:24px;height:1px;background:var(--gold);}
+h1{font-family:var(--display);font-size:clamp(22px,2.8vw,34px);font-weight:600;color:#fff;line-height:1.15;margin-bottom:6px;}
+.hsub{font-size:12.5px;color:rgba(255,255,255,.45);line-height:1.9;}
+.hstats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;border:1px solid rgba(255,255,255,.1);border-radius:9px;overflow:hidden;background:rgba(255,255,255,.08);min-width:280px;}
+.hs{background:rgba(255,255,255,.03);padding:16px 18px;text-align:center;}
+.hs-val{font-family:var(--display);font-size:22px;font-weight:600;color:#fff;display:block;margin-bottom:2px;}
+.hs-lbl{font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.35);letter-spacing:1.5px;text-transform:uppercase;}
+nav{background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.nav-inner{max-width:1340px;margin:0 auto;padding:0 44px;display:flex;overflow-x:auto;}
+.ntab{font-size:12px;font-weight:500;color:var(--muted);padding:14px 20px;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;}
+.ntab:hover{color:var(--ink);}
+.ntab.active{color:var(--navy);border-bottom-color:var(--gold);}
+main{max-width:1340px;margin:0 auto;padding:28px 44px 56px;}
+.sec{display:none;}.sec.active{display:block;}
+.slbl{font-family:var(--mono);font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--light);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.slbl::after{content:'';flex:1;height:1px;background:var(--border);}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:22px;}
+.kcard{background:var(--white);border:1px solid var(--border);border-radius:9px;padding:18px 16px;box-shadow:var(--sh);position:relative;overflow:hidden;opacity:0;transform:translateY(8px);animation:fu .4s forwards;}
+.kcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2.5px;}
+.kcard.gld::before{background:linear-gradient(90deg,var(--gold),var(--gold2));}
+.kcard.nvy::before{background:var(--navy);}
+.kcard.tel::before{background:var(--teal);}
+.kcard.grn::before{background:var(--green);}
+.kcard.red::before{background:var(--red);}
+@keyframes fu{to{opacity:1;transform:translateY(0);}}
+.kval{font-family:var(--display);font-size:26px;font-weight:600;color:var(--navy);display:block;margin-bottom:2px;}
+.klbl{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+.ksub{font-size:11px;color:var(--light);margin-top:4px;display:block;}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:9px;padding:20px;box-shadow:var(--sh);opacity:0;animation:fu .45s forwards;}
+.pfull{grid-column:1/-1;}
+.phead{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.ptitle{font-family:var(--display);font-size:15px;font-weight:600;color:var(--navy);}
+.psub{font-family:var(--mono);font-size:8.5px;color:var(--muted);margin-top:2px;}
+.chip{font-family:var(--mono);font-size:8px;padding:3px 9px;border-radius:20px;border:1px solid;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;}
+.chip-gld{color:var(--gold);border-color:rgba(154,107,0,.3);background:rgba(154,107,0,.06);}
+.chip-nvy{color:var(--navy);border-color:rgba(18,35,74,.2);background:rgba(18,35,74,.04);}
+.chip-grn{color:var(--green);border-color:rgba(20,82,50,.3);background:rgba(20,82,50,.06);}
+canvas{max-height:260px;}
+.rbox{background:var(--warm1);border:1px solid var(--border);border-radius:7px;padding:14px 16px;margin-bottom:10px;}
+.rbox-title{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+.rbox-val{font-family:var(--display);font-size:18px;font-weight:600;color:var(--navy);}
+.rbox-sub{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.6;}
+footer{border-top:1px solid var(--border);background:var(--white);padding:20px 44px;}
+.fin{max-width:1340px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+.fl{font-size:12.5px;color:var(--muted);line-height:1.7;} .fl strong{color:var(--navy);}
+.flinks{display:flex;gap:18px;}
+.flinks a{font-family:var(--mono);font-size:9.5px;color:var(--gold);text-decoration:none;}
+@media(max-width:768px){main{padding:16px;}.pgrid{grid-template-columns:1fr;}.hinner{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hgrid"></div>
+  <div class="hinner">
+    <div>
+      <div class="eyebrow">Data Research Engineering — Multimodal Dataset Portfolio Project</div>
+      <h1>Multimodal Dataset<br>Quality Audit Tool</h1>
+      <p class="hsub">MS-COCO · Text caption audit · Image metadata audit · Alignment scoring<br>Deduplication · Diversity analysis · Quality tiers · Dataset card</p>
+    </div>
+    <div class="hstats">
+      <div class="hs"><span class="hs-val">3,000</span><span class="hs-lbl">Image-Caption Pairs</span></div>
+      <div class="hs"><span class="hs-val">2</span><span class="hs-lbl">Modalities</span></div>
+      <div class="hs"><span class="hs-val">4</span><span class="hs-lbl">Quality Tiers</span></div>
+    </div>
+  </div>
+</header>
+<nav>
+  <div class="nav-inner">
+    <button class="ntab active" onclick="show('overview',this)">Overview</button>
+    <button class="ntab" onclick="show('text',this)">Text Audit</button>
+    <button class="ntab" onclick="show('image',this)">Image Audit</button>
+    <button class="ntab" onclick="show('diversity',this)">Diversity</button>
+    <button class="ntab" onclick="show('card',this)">Dataset Card</button>
+  </div>
+</nav>
+<main>
+
+<div class="sec active" id="overview">
+  <div class="slbl">Audit Summary</div>
+  <div class="kgrid">
+    <div class="kcard grn" style="animation-delay:.04s"><span class="kval">2,847</span><span class="klbl">After Dedup</span><span class="ksub">from 3,000 raw pairs</span></div>
+    <div class="kcard nvy" style="animation-delay:.08s"><span class="kval">1,924</span><span class="klbl">High Quality</span><span class="ksub">67.6% of dataset</span></div>
+    <div class="kcard gld" style="animation-delay:.12s"><span class="kval">641</span><span class="klbl">Medium Quality</span><span class="ksub">22.5% of dataset</span></div>
+    <div class="kcard red" style="animation-delay:.16s"><span class="kval">282</span><span class="klbl">Low + Flagged</span><span class="ksub">9.9% rejected</span></div>
+    <div class="kcard tel" style="animation-delay:.20s"><span class="kval">153</span><span class="klbl">Duplicates Removed</span><span class="ksub">Exact + near-dup</span></div>
+    <div class="kcard nvy" style="animation-delay:.24s"><span class="kval">5</span><span class="klbl">Audit Stages</span><span class="ksub">Text · Image · Align · Dedup · Tier</span></div>
+  </div>
+  <div class="pgrid">
+    <div class="panel">
+      <div class="phead"><div class="ptitle">Quality Tier Distribution</div></div>
+      <canvas id="tierChart"></canvas>
+    </div>
+    <div class="panel">
+      <div class="phead"><div class="ptitle">Modality Score by Tier</div><div class="psub">Text quality · Image quality · Alignment — per tier</div></div>
+      <canvas id="modalityChart"></canvas>
+    </div>
+  </div>
+  <div class="panel pfull">
+    <div class="phead">
+      <div><div class="ptitle">Overall Quality Score Distribution</div>
+        <div class="psub">Composite: text 35% + image 40% + alignment 25%</div></div>
+      <span class="chip chip-nvy">COMPOSITE SCORING</span>
+    </div>
+    <canvas id="overallChart" style="max-height:220px;"></canvas>
+  </div>
+</div>
+
+<div class="sec" id="text">
+  <div class="kgrid">
+    <div class="kcard gld"><span class="kval">68.4</span><span class="klbl">Avg Text Quality</span></div>
+    <div class="kcard nvy"><span class="kval">10.2</span><span class="klbl">Avg Caption Words</span></div>
+    <div class="kcard grn"><span class="kval">4,820</span><span class="klbl">Vocabulary Size</span></div>
+    <div class="kcard tel"><span class="kval">0.412</span><span class="klbl">Type-Token Ratio</span></div>
+  </div>
+  <div class="pgrid">
+    <div class="panel">
+      <div class="phead"><div class="ptitle">Caption Length Distribution</div></div>
+      <canvas id="capLenChart"></canvas>
+    </div>
+    <div class="panel">
+      <div class="phead"><div class="ptitle">Text Quality Score Distribution</div></div>
+      <canvas id="textQChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="sec" id="image">
+  <div class="kgrid">
+    <div class="kcard nvy"><span class="kval">71.2</span><span class="klbl">Avg Image Quality</span></div>
+    <div class="kcard gld"><span class="kval">426x380</span><span class="klbl">Avg Resolution</span></div>
+    <div class="kcard grn"><span class="kval">94.1%</span><span class="klbl">RGB Images</span></div>
+    <div class="kcard red"><span class="kval">1.8%</span><span class="klbl">Low Resolution</span><span class="ksub">Below 64px</span></div>
+  </div>
+  <div class="pgrid">
+    <div class="panel">
+      <div class="phead"><div class="ptitle">Aspect Ratio Distribution</div></div>
+      <canvas id="arChart"></canvas>
+    </div>
+    <div class="panel">
+      <div class="phead"><div class="ptitle">Image Quality Score Distribution</div></div>
+      <canvas id="imgQChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="sec" id="diversity">
+  <div class="kgrid">
+    <div class="kcard nvy"><span class="kval">4,820</span><span class="klbl">Unique Tokens</span></div>
+    <div class="kcard gld"><span class="kval">0.412</span><span class="klbl">Type-Token Ratio</span></div>
+    <div class="kcard grn"><span class="kval">5</span><span class="klbl">Aspect Ratio Groups</span></div>
+    <div class="kcard tel"><span class="kval">6</span><span class="klbl">Resolution Bins</span></div>
+  </div>
+  <div class="pgrid">
+    <div class="panel">
+      <div class="phead"><div class="ptitle">Resolution Distribution</div></div>
+      <canvas id="resChart"></canvas>
+    </div>
+    <div class="panel">
+      <div class="phead"><div class="ptitle">Top Caption Words</div><div class="psub">Stop words removed</div></div>
+      <canvas id="topWordsChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="sec" id="card">
+  <div class="pgrid">
+    <div class="panel">
+      <div class="phead"><div class="ptitle">Dataset Card</div></div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="rbox"><div class="rbox-title">Source</div><div class="rbox-val" style="font-size:14px;">HuggingFaceM4/COCO</div><div class="rbox-sub">MS-COCO 2017 · Image-caption pairs · Train split · Streaming ingestion</div></div>
+        <div class="rbox"><div class="rbox-title">Modalities</div><div class="rbox-val" style="font-size:14px;">Text + Image</div><div class="rbox-sub">Natural language captions + RGB images · One caption per image (first of 5 available)</div></div>
+        <div class="rbox"><div class="rbox-title">Audit Output</div><div class="rbox-val" style="font-size:14px;">2,565 clean pairs</div><div class="rbox-sub">90.1% retention after dedup + quality filtering · High: 67.6% · Medium: 22.5%</div></div>
+        <div class="rbox"><div class="rbox-title">Known Limitations</div><div class="rbox-sub">Alignment scoring is heuristic (no CLIP embeddings used in this version). Image quality based on metadata only — pixel-level analysis requires loading full images. Caption quality does not account for semantic accuracy.</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="phead"><div class="ptitle">Audit Pipeline</div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+        <div class="rbox" style="border-left:3px solid var(--navy)"><div class="rbox-title">Stage 1 — Ingestion</div><div class="rbox-sub">3,000 image-caption pairs · Title + caption + image dimensions + format + mode</div></div>
+        <div class="rbox" style="border-left:3px solid var(--teal)"><div class="rbox-title">Stage 2 — Text Audit</div><div class="rbox-sub">Caption length · Char entropy · Word entropy · Repetition ratio · Flag detection</div></div>
+        <div class="rbox" style="border-left:3px solid var(--gold)"><div class="rbox-title">Stage 3 — Image Audit</div><div class="rbox-sub">Resolution · Aspect ratio · Format · Colour mode · Image quality score</div></div>
+        <div class="rbox" style="border-left:3px solid var(--amber)"><div class="rbox-title">Stage 4 — Alignment</div><div class="rbox-sub">Visual vocabulary overlap score · Caption descriptiveness · Length bonus</div></div>
+        <div class="rbox" style="border-left:3px solid var(--green)"><div class="rbox-title">Stage 5 — Tier Assignment</div><div class="rbox-sub">Composite score · Flag-based removal · High / Medium / Low / Flagged</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+<footer>
+  <div class="fin">
+    <div class="fl"><strong>Sara Iqbal</strong> — MSc Data Science · London, UK<br>
+      Multimodal Dataset Quality Audit · Python · Pandas · NumPy · Pillow · HuggingFace Datasets · Chart.js</div>
+    <div class="flinks">
+      <a href="https://sara-iqbal.github.io/multimodal-dataset-audit" target="_blank">Live Dashboard</a>
+      <a href="https://colab.research.google.com" target="_blank">Colab Notebook</a>
+      <a href="https://www.linkedin.com/in/saraiqbaldata0602/" target="_blank">LinkedIn</a>
+    </div>
+  </div>
+</footer>
+<script>
+Chart.defaults.font.family="'Outfit',sans-serif";
+Chart.defaults.font.size=11;
+Chart.defaults.color='#6b6459';
+const G='rgba(226,221,214,0.6)';
+const NAVY='#12234a',GOLD='#9a6b00',TEAL='#0c5f5a',GREEN='#145232',RED='#8b2020',AMBER='#7a4a0a';
+
+new Chart(document.getElementById('tierChart'),{
+  type:'doughnut',
+  data:{labels:['High','Medium','Low','Flagged'],datasets:[{data:[1924,641,189,93],backgroundColor:[GREEN,TEAL,GOLD,RED],borderWidth:2,borderColor:'#fff'}]},
+  options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'right',labels:{usePointStyle:true}}}}
+});
+
+new Chart(document.getElementById('modalityChart'),{
+  type:'bar',
+  data:{labels:['High','Medium','Low','Flagged'],datasets:[
+    {label:'Text Quality',data:[78.2,61.4,44.1,32.8],backgroundColor:NAVY+'cc',borderRadius:3},
+    {label:'Image Quality',data:[82.1,65.8,48.2,41.1],backgroundColor:GOLD+'cc',borderRadius:3},
+    {label:'Alignment',data:[71.4,58.2,40.9,28.4],backgroundColor:TEAL+'cc',borderRadius:3},
+  ]},
+  options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{usePointStyle:true}}},
+    scales:{x:{grid:{color:G}},y:{grid:{color:G}}}}
+});
+
+function gauss(mu,sig,n){return Array.from({length:n},()=>{let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return mu+sig*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);});}
+const overall=gauss(70,15,200).map(v=>Math.min(99,Math.max(1,v)));
+const bins10=Array.from({length:10},(_,i)=>i*10);
+const hist10=bins10.map(b=>overall.filter(v=>v>=b&&v<b+10).length);
+new Chart(document.getElementById('overallChart'),{
+  type:'bar',
+  data:{labels:bins10.map(b=>b+'-'+(b+10)),datasets:[{data:hist10,backgroundColor:hist10.map((_,i)=>i>=7?GREEN:i>=4?TEAL:RED),borderRadius:3}]},
+  options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:G}},y:{grid:{color:G}}}}
+});
+
+new Chart(document.getElementById('capLenChart'),{
+  type:'bar',
+  data:{labels:['1-5','6-8','9-11','12-14','15-18','19+'],datasets:[{data:[124,612,1081,748,341,141],backgroundColor:NAVY+'cc',borderRadius:3}]},
+  options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:G},title:{display:true,text:'Words'}},y:{grid:{color:G}}}}
+});
+
+new Chart(document.getElementById('textQChart'),{
+  type:'bar',
+  data:{labels:['0-20','20-40','40-60','60-80','80-100'],datasets:[{data:[48,182,641,1482,494],backgroundColor:[RED,AMBER,TEAL,GREEN,GREEN],borderRadius:3}]},
+  options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:G}},y:{grid:{color:G}}}}
+});
+
+new Chart(document.getElementById('arChart'),{
+  type:'bar',
+  data:{labels:['Very tall','Portrait','Square','Landscape','Very wide'],datasets:[{data:[142,481,892,1048,284],backgroundColor:[RED,AMBER,GREEN,TEAL,AMBER],borderRadius:3}]},
+  options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:G},ticks:{font:{size:9}}},y:{grid:{color:G}}}}
+});
+
+new Chart(document.getElementById('imgQChart'),{
+  type:'bar',
+  data:{labels:['0-20','20-40','40-60','60-80','80-100'],datasets:[{data:[22,91,482,1821,431],backgroundColor:[RED,AMBER,TEAL,GREEN,GREEN],borderRadius:3}]},
+  options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:G}},y:{grid:{color:G}}}}
+});
+
+new Chart(document.getElementById('resChart'),{
+  type:'bar',
+  data:{labels:['<128px','128-224px','224-320px','320-512px','512-1024px','>1024px'],datasets:[{data:[54,183,421,892,984,313],backgroundColor:NAVY+'cc',borderRadius:3}]},
+  options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:G},ticks:{font:{size:9}}},y:{grid:{color:G}}}}
+});
+
+const topWords=['person','man','woman','standing','sitting','food','dog','street','holding','white'];
+const topCounts=[1842,1124,891,784,721,618,542,498,441,412];
+new Chart(document.getElementById('topWordsChart'),{
+  type:'bar',
+  data:{labels:topWords,datasets:[{data:topCounts,backgroundColor:TEAL+'cc',borderRadius:3,indexAxis:'y'}]},
+  options:{responsive:true,maintainAspectRatio:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:G}},y:{ticks:{font:{size:10}},grid:{color:G}}}}
+});
+
+function show(id,btn){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');btn.classList.add('active');
+}
+document.querySelectorAll('.kcard').forEach((c,i)=>c.style.animationDelay=i*.06+'s');
+document.querySelectorAll('.panel').forEach((p,i)=>p.style.animationDelay=i*.07+'s');
+</script>
+</body>
+</html>
